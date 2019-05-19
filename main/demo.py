@@ -78,6 +78,13 @@ def main(argv=None):
             for im_fn in im_fn_list:
                 print('===============')
                 print(im_fn)
+
+                index = im_fn.rfind('.') # extension
+                last_slash = im_fn.rfind('/')
+                if os.path.exists(im_fn[:index]):
+                    shutil.rmtree(im_fn[:index])
+                os.mkdir(os.path.join(FLAGS.output_path, os.path.basename(im_fn[:index])))
+
                 start = time.time()
                 try:
                     im = cv2.imread(im_fn)[:, :, ::-1]
@@ -104,10 +111,15 @@ def main(argv=None):
                 print("cost time: {:.2f}s".format(cost_time))
 
                 for i, box in enumerate(boxes):
-                    cv2.polylines(img, [box[:8].astype(np.int32).reshape((-1, 1, 2))], True, color=(0, 255, 0),
-                                  thickness=2)
-                img = cv2.resize(img, None, None, fx=1.0 / rh, fy=1.0 / rw, interpolation=cv2.INTER_LINEAR)
-                cv2.imwrite(os.path.join(FLAGS.output_path, os.path.basename(im_fn)), img[:, :, ::-1])
+                    x, y, w, h = cv2.boundingRect(box[:8].astype(np.int32).reshape((-1, 1, 2)))
+                    # If you wanna draw rectangles
+                    # cv2.polylines(img, [x, y, w, h], True, color=(0, 255, 0), thickness=2)
+                    cropped = img[y:y+h, x:x+w]
+                    cv2.imwrite(os.path.join(FLAGS.output_path, os.path.basename(im_fn[:index]), os.path.basename(str(i) + im_fn[index:])), cropped)
+                #img = cv2.resize(img, None, None, fx=1.0 / rh, fy=1.0 / rw, interpolation=cv2.INTER_LINEAR)
+                # And if you wanna write the images with rectangles
+                #cv2.imwrite(os.path.join(FLAGS.output_path, os.path.basename(im_fn)), img[:, :, ::-1])
+                
 
                 with open(os.path.join(FLAGS.output_path, os.path.splitext(os.path.basename(im_fn))[0]) + ".txt",
                           "w") as f:
